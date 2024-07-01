@@ -1,0 +1,25 @@
+Source: simple-package
+Section: unknown
+Priority: optional
+Maintainer: root <root@unknown>
+Rules-Requires-Root: no
+Build-Depends:
+ build-essential,
+ debhelper-compat (= 13),
+ devscripts,
+ doxygen,
+ git,
+ graphviz,
+ wget,
+Standards-Version: 4.6.2
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Browser: https://salsa.debian.org/debian/debian-source
+#Vcs-Git: https://salsa.debian.org/debian/debian-source.git
+
+Package: simple-package
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: <insert up to 60 chars description>
+ <Insert long description, indented with spaces.>

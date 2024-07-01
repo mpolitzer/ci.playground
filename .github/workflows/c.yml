@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [$default-branch]
+  workflow_dispatch:
+
+jobs:
+  debian:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4
+    - run:  make github-env >> $GITHUB_ENV
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/build-push-action@v6
+      with:
+        file: debian.dockerfile
+        tags: ghcr.io/mpolitzer/${{ env.DEBIMG }}
+        push: false
+        load: true
+        cache-from: type=gha,scope=debian
+        cache-to: type=gha,mode=max,scope=debian
+
+  build:
+    runs-on: ubuntu-24.04
+    needs: debian
+    steps:
+    - uses: actions/checkout@v4
+    - run:  make github-env >> $GITHUB_ENV
+    - uses: addnab/docker-run-action@v3
+      with:
+        image: ghcr.io/mpolitzer/${{ env.DEBIMG }}
+        options: >
+          --user ${{ env.UID }}:${{ env.GID }}
+          --volume ${{ github.workspace }}/..:${{ github.workspace }}/..
+          --workdir ${{ github.workspace }}
+        run: make repo.build doc.build
+    - uses: actions/configure-pages@v5
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: out
+
+  release:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+    - id: deployment
+      uses: actions/deploy-pages@v4
+    - uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        prerelease: true
+        files: |
+          ${{ env.REPODIR }}/*

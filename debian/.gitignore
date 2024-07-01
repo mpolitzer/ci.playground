@@ -1,0 +1,4 @@
+debhelper-build-stamp
+files
+simple-package
+simple-package.substvars
